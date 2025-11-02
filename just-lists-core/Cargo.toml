@@ -1,10 +1,11 @@
 [package]
 name = "just-lists-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 keywords = ["task-manager", "ratatui", "lists"]
 description = "Core library for just-lists terminal-based task manager."
+repository = "https://github.com/betsegaw/just-lists"
 
 [dependencies]
 rand = "0.9.2"
