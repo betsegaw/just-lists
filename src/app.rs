@@ -519,8 +519,8 @@ impl App {
             )
         }
 
-        self.toggle_edit_mode();
         self.update_display(Some(current_item_path));
+        self.toggle_edit_mode();
         self.save_list();
     }
 
