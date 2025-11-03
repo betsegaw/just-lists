@@ -519,6 +519,7 @@ impl App {
 
         self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
+        self.update_display();
         self.save_list();
     }
 
@@ -547,6 +548,7 @@ impl App {
             self.handle_expand();
         }
 
+        self.update_display();
         self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
 
@@ -742,7 +744,7 @@ impl App {
 
         let mut display_index = 0;
         
-        let backup_select_list_index = self.selected_list_index.clone();
+        let old_selected_entry = self.display.get(self.selected_list_index.clone()).cloned();
 
         while let Some(display_item) = self.display.get(display_index) {
             if self.expanded_items.contains(&display_item.id_path) {
@@ -754,7 +756,11 @@ impl App {
         }
 
         if self.display.len() > 0 {
-            self.selected_list_index = backup_select_list_index.clamp(0, self.display.len() - 1);
+            if let Some(old_selected_entry) = old_selected_entry {
+                if let Some(index) = self.display.iter().position(|e| e.id_path == old_selected_entry.id_path) {
+                    self.selected_list_index = index;
+                }
+            }
         }
     }
 }
