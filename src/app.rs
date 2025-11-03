@@ -23,6 +23,7 @@ struct Inputs {
     file: Option<PathBuf>,
 }
 
+#[derive(Clone)]
 struct ListEntry {
     id_path: Vec<String>,
     expanded: bool,
@@ -49,7 +50,20 @@ enum Message {
     Delete,
     FocusOnCurrentItem,
     FocusOnParentItem,
+    Copy,
+    Cut,
+    Paste,
     Text(char),
+}
+
+enum ClipboardAction {
+    Cut(Option<String>),
+    Copy
+}
+
+struct Clipboard {
+    action_type: ClipboardAction,
+    list_item_id: String
 }
 
 pub struct App {
@@ -61,6 +75,7 @@ pub struct App {
     edit_text: String,
     file_path: Option<PathBuf>,
     display_parent_item: Option<Vec<String>>,
+    clipboard: Option<Clipboard>,
     debug: bool,
 }
 
@@ -93,6 +108,7 @@ impl App {
             edit_text: "".to_string(),
             file_path: inputs.file,
             display_parent_item: None,
+            clipboard: None,
             debug: false,
         };
 
@@ -114,6 +130,9 @@ impl App {
                     Some(Message::Enter) => self.handle_expand(),
                     Some(Message::FocusOnCurrentItem) => self.focus_on_current(),
                     Some(Message::FocusOnParentItem) => self.focus_on_parent(),
+                    Some(Message::Copy) => self.copy(),
+                    Some(Message::Cut) => self.cut(),
+                    Some(Message::Paste) => self.paste(),
                     Some(Message::Delete) => {
                         self.delete_selected_item();
                     }
@@ -311,6 +330,9 @@ impl App {
                     KeyCode::Char('d') => Some(Message::Delete),
                     KeyCode::Char('j') => Some(Message::FocusOnCurrentItem),
                     KeyCode::Char('u') => Some(Message::FocusOnParentItem),
+                    KeyCode::Char('c') => Some(Message::Copy),
+                    KeyCode::Char('x') => Some(Message::Cut),
+                    KeyCode::Char('v') => Some(Message::Paste),
                     _ => None,
                 },
                 UIState::EditView => {
@@ -446,14 +468,12 @@ impl App {
         let item_to_delete_id = item_to_delete_id_path.last().unwrap();
         self.display.remove(self.selected_list_index);
 
-        match App::get_parent_from_path(&item_to_delete_id_path) {
-            Some(parent_id) => {
-                _ = self
-                    .list
-                    .remove_child_list_item(item_to_delete_id, &parent_id.to_string())
-            }
-            None => _ = self.list.remove_list_item(item_to_delete_id),
-        }
+        let parent = App::get_parent_from_path(&item_to_delete_id_path).map(|s| s.to_string() );
+
+        _ = self
+            .list
+            .remove_child_list_item(item_to_delete_id, parent.as_ref());
+        
 
         if self.display.len() > 0 {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
@@ -655,6 +675,32 @@ impl App {
 
     fn get_current_display_item(&self) -> Option<&ListEntry> {
         self.display.get(self.selected_list_index)
+    }
+
+    fn copy(&mut self) {
+        if let Some(item_id) = self.get_current_display_item() {
+            self.clipboard = Some(Clipboard { action_type: ClipboardAction::Copy, list_item_id: item_id.id_path.last().unwrap().clone() })
+        }
+    }
+
+    fn cut(&mut self) {
+        if let Some(item_id) = self.get_current_display_item() {
+            let parent_id = Self::get_parent_from_path(&item_id.id_path).map(|p| p.to_owned());
+            self.clipboard = Some(Clipboard { action_type: ClipboardAction::Cut(parent_id), list_item_id: item_id.id_path.last().unwrap().clone() })
+        }
+    }
+
+    fn paste(&mut self) {
+        if let Some(clipboard) = &self.clipboard {
+            let current_selected_item = self.get_current_display_item().cloned();
+            if let Some(selected_item) = current_selected_item {
+                _ = self.list.add_existing_child_list_item(&clipboard.list_item_id, selected_item.id_path.last().unwrap());
+            }
+
+            if let ClipboardAction::Cut(previous_parent_id) = &clipboard.action_type {
+                 _ = self.list.remove_child_list_item(&clipboard.list_item_id, previous_parent_id.as_ref());
+            }
+        }
     }
 
     fn update_display(&mut self) {
