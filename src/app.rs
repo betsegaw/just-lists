@@ -473,6 +473,7 @@ impl App {
 
     fn add_new_list_item(&mut self) {
         let item = just_lists_core::list_item::ListItem::new("".to_string());
+        let mut current_item_path: Vec<String>;
 
         if let Some(selected_list_entry) = self.get_current_display_item() {
             if selected_list_entry.expanded {
@@ -481,16 +482,17 @@ impl App {
         }
 
         if self.display.len() == 0 {
+            current_item_path = vec![item.id.clone()];
             self.list.add_list_item(item.clone());
             self.display.insert(
                 0,
                 ListEntry {
-                    id_path: vec![item.id.clone()],
+                    id_path: current_item_path.clone(),
                     expanded: false,
                 },
             )
         } else {
-            let mut current_item_path = self
+            current_item_path = self
                 .display
                 .get(self.selected_list_index)
                 .unwrap()
@@ -511,7 +513,7 @@ impl App {
             self.display.insert(
                 self.selected_list_index + 1,
                 ListEntry {
-                    id_path: current_item_path,
+                    id_path: current_item_path.clone(),
                     expanded: false,
                 },
             )
@@ -519,7 +521,7 @@ impl App {
 
         self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
-        self.update_display(None);
+        self.update_display(Some(current_item_path));
         self.save_list();
     }
 
@@ -707,7 +709,7 @@ impl App {
         self.update_display(None);
     }
 
-    fn update_display(&mut self, _custom_selected_item: Option<Vec<String>>) {
+    fn update_display(&mut self, custom_selected_item: Option<Vec<String>>) {
         let items_to_display: Vec<&just_lists_core::list_item::ListItem>;
 
         match self.display_parent_item.clone() {
@@ -755,10 +757,26 @@ impl App {
             display_index += 1;
         }
 
-        if self.display.len() > 0 {
-            if let Some(old_selected_entry) = old_selected_entry {
-                if let Some(index) = self.display.iter().position(|e| e.id_path == old_selected_entry.id_path) {
-                    self.selected_list_index = index;
+        match custom_selected_item {
+            None => {
+                    if self.display.len() > 0 {
+                        if let Some(old_selected_entry) = old_selected_entry {
+                            if let Some(index) = self.display.iter().position(|e| e.id_path == old_selected_entry.id_path) {
+                                self.selected_list_index = index;
+                            }
+                        }
+                    }
+            },
+            Some(select_id_path) => {
+                display_index = 0;
+
+                while let Some(display_item) = self.display.get(display_index) {
+                    if display_item.id_path == select_id_path {
+                        self.selected_list_index = display_index;
+                        break;
+                    }
+
+                    display_index += 1;
                 }
             }
         }
