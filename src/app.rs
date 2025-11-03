@@ -8,6 +8,7 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::collections::HashSet;
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -77,7 +78,7 @@ pub struct App {
     display_parent_item: Option<Vec<String>>,
     clipboard: Option<Clipboard>,
     debug: bool,
-    expanded_items: Vec<Vec<String>>,
+    expanded_items: HashSet<Vec<String>>,
 }
 
 impl App {
@@ -111,7 +112,7 @@ impl App {
             display_parent_item: None,
             clipboard: None,
             debug: false,
-            expanded_items: vec![],
+            expanded_items: HashSet::new(),
         };
 
         app
@@ -353,7 +354,7 @@ impl App {
         let current_item = self.display.get_mut(self.selected_list_index).unwrap();
 
         if current_item.expanded == false {
-            self.expanded_items.push(current_item.id_path.clone());
+            self.expanded_items.insert(current_item.id_path.clone());
             let list_item_children = self.list.get_children(
                 self.list
                     .get_list_item(current_item.id_path.last().unwrap())
@@ -466,6 +467,7 @@ impl App {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
         }
 
+        self.update_display();
         self.save_list();
     }
 
@@ -699,6 +701,8 @@ impl App {
                     .remove_child_list_item(&clipboard.list_item_id, previous_parent_id.as_ref());
             }
         }
+
+        self.update_display();
     }
 
     fn update_display(&mut self) {
@@ -734,6 +738,23 @@ impl App {
 
         if self.display.len() > 0 {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
+        }
+
+        let mut display_index = 0;
+        
+        let backup_select_list_index = self.selected_list_index.clone();
+
+        while let Some(display_item) = self.display.get(display_index) {
+            if self.expanded_items.contains(&display_item.id_path) {
+                self.selected_list_index = display_index;
+                self.handle_expand();
+            }
+
+            display_index += 1;
+        }
+
+        if self.display.len() > 0 {
+            self.selected_list_index = backup_select_list_index.clamp(0, self.display.len() - 1);
         }
     }
 }
