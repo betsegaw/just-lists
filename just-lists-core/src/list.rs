@@ -34,7 +34,7 @@ impl List {
     pub fn add_existing_child_list_item(
         &mut self,
         item_id: &String,
-        parent_id: &String
+        parent_id: &String,
     ) -> Result<(), ListItemInsertionError> {
         let parent = match self.list_item_store.get_mut(parent_id) {
             Some(parent) => parent,

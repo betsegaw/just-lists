@@ -4,10 +4,10 @@ use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
 use ratatui::prelude::*;
 use ratatui::widgets::ListState;
+use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::fs;
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -58,12 +58,12 @@ enum Message {
 
 enum ClipboardAction {
     Cut(Option<String>),
-    Copy
+    Copy,
 }
 
 struct Clipboard {
     action_type: ClipboardAction,
-    list_item_id: String
+    list_item_id: String,
 }
 
 pub struct App {
@@ -111,7 +111,7 @@ impl App {
             display_parent_item: None,
             clipboard: None,
             debug: false,
-            expanded_items: vec![]
+            expanded_items: vec![],
         };
 
         app
@@ -145,24 +145,12 @@ impl App {
                     _ => (),
                 },
                 UIState::EditView => match current_msg {
-                    Some(Message::Esc) => {
-                        self.state = UIState::ListView;
-                    }
-                    Some(Message::Enter) => {
-                        self.save_edited_text();
-                    }
-                    Some(Message::Left) => {
-                        self.handle_cursor_left();
-                    }
-                    Some(Message::Right) => {
-                        self.handle_cursor_right();
-                    }
-                    Some(Message::Backspace) => {
-                        self.handle_backspace();
-                    }
-                    Some(Message::Text(c)) => {
-                        self.handle_text_input(c);
-                    }
+                    Some(Message::Esc) => self.state = UIState::ListView,
+                    Some(Message::Enter) => self.save_edited_text(),
+                    Some(Message::Left) => self.handle_cursor_left(),
+                    Some(Message::Right) => self.handle_cursor_right(),
+                    Some(Message::Backspace) => self.handle_backspace(),
+                    Some(Message::Text(c)) => self.handle_text_input(c),
                     _ => (),
                 },
             }
@@ -184,8 +172,7 @@ impl App {
             None => "Sample".to_string(),
         };
 
-        let title_block = Block::new()
-            .borders(Borders::ALL);
+        let title_block = Block::new().borders(Borders::ALL);
 
         let mut title_paragraph: Paragraph;
 
@@ -209,8 +196,7 @@ impl App {
 
         frame.render_widget(title_paragraph, layout[0]);
 
-        let block = Block::new()
-            .borders(Borders::ALL);
+        let block = Block::new().borders(Borders::ALL);
 
         let items: Vec<ListItem> = self
             .display
@@ -241,11 +227,12 @@ impl App {
                     "".to_string()
                 };
 
-                let parent_path_length = if let Some(display_path) = self.display_parent_item.clone() {
-                    display_path.len()
-                } else {
-                    0
-                };
+                let parent_path_length =
+                    if let Some(display_path) = self.display_parent_item.clone() {
+                        display_path.len()
+                    } else {
+                        0
+                    };
 
                 text = format!(
                     "  {}{}{}{}{}",
@@ -469,12 +456,11 @@ impl App {
 
         self.display.remove(self.selected_list_index);
 
-        let parent = App::get_parent_from_path(&item_to_delete_id_path).map(|s| s.to_string() );
+        let parent = App::get_parent_from_path(&item_to_delete_id_path).map(|s| s.to_string());
 
         _ = self
             .list
             .remove_child_list_item(item_to_delete_id, parent.as_ref());
-        
 
         if self.display.len() > 0 {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
@@ -680,14 +666,20 @@ impl App {
 
     fn copy(&mut self) {
         if let Some(item_id) = self.get_current_display_item() {
-            self.clipboard = Some(Clipboard { action_type: ClipboardAction::Copy, list_item_id: item_id.id_path.last().unwrap().clone() })
+            self.clipboard = Some(Clipboard {
+                action_type: ClipboardAction::Copy,
+                list_item_id: item_id.id_path.last().unwrap().clone(),
+            })
         }
     }
 
     fn cut(&mut self) {
         if let Some(item_id) = self.get_current_display_item() {
             let parent_id = Self::get_parent_from_path(&item_id.id_path).map(|p| p.to_owned());
-            self.clipboard = Some(Clipboard { action_type: ClipboardAction::Cut(parent_id), list_item_id: item_id.id_path.last().unwrap().clone() })
+            self.clipboard = Some(Clipboard {
+                action_type: ClipboardAction::Cut(parent_id),
+                list_item_id: item_id.id_path.last().unwrap().clone(),
+            })
         }
     }
 
@@ -695,11 +687,16 @@ impl App {
         if let Some(clipboard) = &self.clipboard {
             let current_selected_item = self.get_current_display_item().cloned();
             if let Some(selected_item) = current_selected_item {
-                _ = self.list.add_existing_child_list_item(&clipboard.list_item_id, selected_item.id_path.last().unwrap());
+                _ = self.list.add_existing_child_list_item(
+                    &clipboard.list_item_id,
+                    selected_item.id_path.last().unwrap(),
+                );
             }
 
             if let ClipboardAction::Cut(previous_parent_id) = &clipboard.action_type {
-                 _ = self.list.remove_child_list_item(&clipboard.list_item_id, previous_parent_id.as_ref());
+                _ = self
+                    .list
+                    .remove_child_list_item(&clipboard.list_item_id, previous_parent_id.as_ref());
             }
         }
     }
