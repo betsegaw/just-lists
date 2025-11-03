@@ -466,6 +466,15 @@ impl App {
             .id_path
             .clone();
         let item_to_delete_id = item_to_delete_id_path.last().unwrap();
+
+        let selected_item = self.get_current_display_item();
+
+        if let Some(item) = selected_item {
+            if item.expanded {
+                self.handle_expand();
+            }
+        }
+
         self.display.remove(self.selected_list_index);
 
         let parent = App::get_parent_from_path(&item_to_delete_id_path).map(|s| s.to_string() );
