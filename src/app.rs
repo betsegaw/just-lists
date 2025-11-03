@@ -292,7 +292,14 @@ impl App {
 
     fn handle_key(&self, key: event::KeyEvent) -> Option<Message> {
         match key.code {
-            KeyCode::Esc => Some(Message::Esc),
+            KeyCode::Esc => match &self.display_parent_item {
+                None => Some(Message::Esc),
+                Some(path) => if path.len() > 0 {
+                    Some(Message::FocusOnParentItem)
+                } else {
+                    Some(Message::Esc)
+                }
+            },
             KeyCode::Enter => Some(Message::Enter),
             KeyCode::Up => Some(Message::Up),
             KeyCode::Down => Some(Message::Down),
@@ -307,7 +314,6 @@ impl App {
                     KeyCode::Char('i') => Some(Message::InsertChild),
                     KeyCode::Char('d') => Some(Message::Delete),
                     KeyCode::Char('j') => Some(Message::FocusOnCurrentItem),
-                    KeyCode::Char('u') => Some(Message::FocusOnParentItem),
                     KeyCode::Char('c') => Some(Message::Copy),
                     KeyCode::Char('x') => Some(Message::Cut),
                     KeyCode::Char('v') => Some(Message::Paste),
