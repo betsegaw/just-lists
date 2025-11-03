@@ -135,24 +135,12 @@ impl App {
                     Some(Message::Copy) => self.copy(),
                     Some(Message::Cut) => self.cut(),
                     Some(Message::Paste) => self.paste(),
-                    Some(Message::Delete) => {
-                        self.delete_selected_item();
-                    }
-                    Some(Message::New) => {
-                        self.add_new_list_item();
-                    }
-                    Some(Message::InsertChild) => {
-                        self.insert_child_item();
-                    }
-                    Some(Message::Space) => {
-                        self.toggle_item_completion();
-                    }
-                    Some(Message::Edit) => {
-                        self.toggle_edit_mode();
-                    }
-                    Some(Message::Text(c)) => {
-                        self.handle_text_input(c);
-                    }
+                    Some(Message::Delete) => self.delete_selected_item(),
+                    Some(Message::New) => self.add_new_list_item(),
+                    Some(Message::InsertChild) => self.insert_child_item(),
+                    Some(Message::Space) => self.toggle_item_completion(),
+                    Some(Message::Edit) => self.toggle_edit_mode(),
+                    Some(Message::Text(c)) => self.handle_text_input(c),
                     None => (),
                     _ => (),
                 },
