@@ -2,7 +2,7 @@ use color_eyre::{Result, eyre::Ok};
 use core::panic;
 use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
-use ratatui::prelude::*;
+use ratatui::{prelude::*, widgets::BorderType};
 use ratatui::widgets::ListState;
 use std::io::Read;
 use std::path::PathBuf;
@@ -176,6 +176,7 @@ impl App {
         };
 
         let title_block = Block::new()
+            .border_type(BorderType::Rounded)
             .borders(Borders::ALL);
 
         let mut title_paragraph: Paragraph;
@@ -201,6 +202,7 @@ impl App {
         frame.render_widget(title_paragraph, layout[0]);
 
         let block = Block::new()
+            .border_type(BorderType::Rounded)
             .borders(Borders::ALL);
 
         let items: Vec<ListItem> = self
@@ -267,7 +269,9 @@ impl App {
 
         match self.state {
             UIState::EditView => {
-                let block = Block::new().borders(Borders::ALL);
+                let block = Block::new()
+                    .border_type(BorderType::Rounded)
+                    .borders(Borders::ALL);
                 let edit_content = Paragraph::new(self.edit_text.clone()).block(block);
                 let area = Self::popup_area(frame.area(), 60, 20);
                 frame.render_widget(Clear, area);
