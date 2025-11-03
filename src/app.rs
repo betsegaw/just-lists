@@ -77,6 +77,7 @@ pub struct App {
     display_parent_item: Option<Vec<String>>,
     clipboard: Option<Clipboard>,
     debug: bool,
+    expanded_items: Vec<Vec<String>>,
 }
 
 impl App {
@@ -110,6 +111,7 @@ impl App {
             display_parent_item: None,
             clipboard: None,
             debug: false,
+            expanded_items: vec![]
         };
 
         app
@@ -376,6 +378,7 @@ impl App {
         let current_item = self.display.get_mut(self.selected_list_index).unwrap();
 
         if current_item.expanded == false {
+            self.expanded_items.push(current_item.id_path.clone());
             let list_item_children = self.list.get_children(
                 self.list
                     .get_list_item(current_item.id_path.last().unwrap())
@@ -398,6 +401,7 @@ impl App {
                 );
             }
         } else {
+            self.expanded_items.retain(|p| *p != current_item.id_path);
             current_item.expanded = false;
             let current_path_length = current_item.id_path.len();
 
