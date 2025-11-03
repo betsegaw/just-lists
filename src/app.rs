@@ -119,7 +119,7 @@ impl App {
     }
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        self.update_display();
+        self.update_display(None);
 
         loop {
             terminal.draw(|f| self.view(f))?;
@@ -467,7 +467,7 @@ impl App {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
         }
 
-        self.update_display();
+        self.update_display(None);
         self.save_list();
     }
 
@@ -519,7 +519,7 @@ impl App {
 
         self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
-        self.update_display();
+        self.update_display(None);
         self.save_list();
     }
 
@@ -548,7 +548,7 @@ impl App {
             self.handle_expand();
         }
 
-        self.update_display();
+        self.update_display(None);
         self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
 
@@ -639,7 +639,7 @@ impl App {
             }
         }
 
-        self.update_display();
+        self.update_display(None);
     }
 
     fn focus_on_parent(&mut self) {
@@ -661,7 +661,7 @@ impl App {
             self.display_parent_item = None;
         }
 
-        self.update_display();
+        self.update_display(None);
     }
 
     fn get_current_display_item(&self) -> Option<&ListEntry> {
@@ -704,10 +704,10 @@ impl App {
             }
         }
 
-        self.update_display();
+        self.update_display(None);
     }
 
-    fn update_display(&mut self) {
+    fn update_display(&mut self, _custom_selected_item: Option<Vec<String>>) {
         let items_to_display: Vec<&just_lists_core::list_item::ListItem>;
 
         match self.display_parent_item.clone() {
