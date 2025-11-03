@@ -519,7 +519,6 @@ impl App {
             )
         }
 
-        self.handle_scroll(Message::Down);
         self.toggle_edit_mode();
         self.update_display(Some(current_item_path));
         self.save_list();
@@ -531,12 +530,19 @@ impl App {
         }
 
         let item = just_lists_core::list_item::ListItem::new("".to_string());
-        _ = self.list.add_child_list_item(
-            item,
-            self.display
+
+        let parent_path = self.display
                 .get(self.selected_list_index)
                 .unwrap()
                 .id_path
+                .clone();
+        
+        let mut child_path = parent_path.clone();
+        child_path.push(item.id.clone());
+
+        _ = self.list.add_child_list_item(
+            item,
+            parent_path
                 .last()
                 .unwrap(),
         );
@@ -550,8 +556,7 @@ impl App {
             self.handle_expand();
         }
 
-        self.update_display(None);
-        self.handle_scroll(Message::Down);
+        self.update_display(Some(child_path));
         self.toggle_edit_mode();
 
         self.save_list();
