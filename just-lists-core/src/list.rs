@@ -31,6 +31,27 @@ impl List {
         self.list_item_store.insert(item.id.clone(), item);
     }
 
+    pub fn add_existing_child_list_item(
+        &mut self,
+        item_id: &String,
+        parent_id: &String,
+    ) -> Result<(), ListItemInsertionError> {
+        let parent = match self.list_item_store.get_mut(parent_id) {
+            Some(parent) => parent,
+            None => {
+                return Err(ListItemInsertionError::ParentIdDoesNotExist);
+            }
+        };
+
+        if !parent.children.contains(&item_id) {
+            parent.children.push(item_id.clone());
+        } else {
+            return Err(ListItemInsertionError::ParentAlreadyHasItem);
+        }
+
+        Ok(())
+    }
+
     pub fn add_child_list_item(
         &mut self,
         item: ListItem,
@@ -49,20 +70,7 @@ impl List {
             self.list_item_store.insert(item_id.clone(), item);
         }
 
-        let parent = match self.list_item_store.get_mut(parent_id) {
-            Some(parent) => parent,
-            None => {
-                return Err(ListItemInsertionError::ParentIdDoesNotExist);
-            }
-        };
-
-        if !parent.children.contains(&item_id) {
-            parent.children.push(item_id.clone());
-        } else {
-            return Err(ListItemInsertionError::ParentAlreadyHasItem);
-        }
-
-        Ok(())
+        self.add_existing_child_list_item(&item_id, parent_id)
     }
 
     pub fn get_top_level_list_items(&self) -> Vec<&ListItem> {
@@ -104,22 +112,27 @@ impl List {
     pub fn remove_child_list_item(
         &mut self,
         child_id: &String,
-        parent_id: &String,
+        parent_id: Option<&String>,
     ) -> Result<(), ListItemDeletionError> {
         if !self.list_item_store.contains_key(child_id) {
             return Err(ListItemDeletionError::ChildDoesNotExist);
         }
 
-        if !self.list_item_store.contains_key(parent_id) {
-            return Err(ListItemDeletionError::ParentDoesNotExist);
+        if let Some(parent_id) = parent_id {
+            if !self.list_item_store.contains_key(parent_id) {
+                return Err(ListItemDeletionError::ParentDoesNotExist);
+            }
+
+            self.get_mut_list_item(&parent_id)
+                .unwrap()
+                .children
+                .retain(|c| c != child_id);
+
+            Ok(())
+        } else {
+            self.top_level_items.retain(|i| i != child_id);
+            Ok(())
         }
-
-        self.get_mut_list_item(&parent_id)
-            .unwrap()
-            .children
-            .retain(|c| c != child_id);
-
-        Ok(())
     }
 
     pub fn into_string(&self) -> String {

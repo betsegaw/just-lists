@@ -4,10 +4,11 @@ use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
 use ratatui::{prelude::*, widgets::BorderType};
 use ratatui::widgets::ListState;
+use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::fs;
+use std::collections::HashSet;
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -23,6 +24,7 @@ struct Inputs {
     file: Option<PathBuf>,
 }
 
+#[derive(Clone)]
 struct ListEntry {
     id_path: Vec<String>,
     expanded: bool,
@@ -49,7 +51,20 @@ enum Message {
     Delete,
     FocusOnCurrentItem,
     FocusOnParentItem,
+    Copy,
+    Cut,
+    Paste,
     Text(char),
+}
+
+enum ClipboardAction {
+    Cut(Option<String>),
+    Copy,
+}
+
+struct Clipboard {
+    action_type: ClipboardAction,
+    list_item_id: String,
 }
 
 pub struct App {
@@ -61,7 +76,9 @@ pub struct App {
     edit_text: String,
     file_path: Option<PathBuf>,
     display_parent_item: Option<Vec<String>>,
+    clipboard: Option<Clipboard>,
     debug: bool,
+    expanded_items: HashSet<Vec<String>>,
 }
 
 impl App {
@@ -93,14 +110,16 @@ impl App {
             edit_text: "".to_string(),
             file_path: inputs.file,
             display_parent_item: None,
+            clipboard: None,
             debug: false,
+            expanded_items: HashSet::new(),
         };
 
         app
     }
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        self.update_display();
+        self.update_display(None);
 
         loop {
             terminal.draw(|f| self.view(f))?;
@@ -114,46 +133,25 @@ impl App {
                     Some(Message::Enter) => self.handle_expand(),
                     Some(Message::FocusOnCurrentItem) => self.focus_on_current(),
                     Some(Message::FocusOnParentItem) => self.focus_on_parent(),
-                    Some(Message::Delete) => {
-                        self.delete_selected_item();
-                    }
-                    Some(Message::New) => {
-                        self.add_new_list_item();
-                    }
-                    Some(Message::InsertChild) => {
-                        self.insert_child_item();
-                    }
-                    Some(Message::Space) => {
-                        self.toggle_item_completion();
-                    }
-                    Some(Message::Edit) => {
-                        self.toggle_edit_mode();
-                    }
-                    Some(Message::Text(c)) => {
-                        self.handle_text_input(c);
-                    }
+                    Some(Message::Copy) => self.copy(),
+                    Some(Message::Cut) => self.cut(),
+                    Some(Message::Paste) => self.paste(),
+                    Some(Message::Delete) => self.delete_selected_item(),
+                    Some(Message::New) => self.add_new_list_item(),
+                    Some(Message::InsertChild) => self.insert_child_item(),
+                    Some(Message::Space) => self.toggle_item_completion(),
+                    Some(Message::Edit) => self.toggle_edit_mode(),
+                    Some(Message::Text(c)) => self.handle_text_input(c),
                     None => (),
                     _ => (),
                 },
                 UIState::EditView => match current_msg {
-                    Some(Message::Esc) => {
-                        self.state = UIState::ListView;
-                    }
-                    Some(Message::Enter) => {
-                        self.save_edited_text();
-                    }
-                    Some(Message::Left) => {
-                        self.handle_cursor_left();
-                    }
-                    Some(Message::Right) => {
-                        self.handle_cursor_right();
-                    }
-                    Some(Message::Backspace) => {
-                        self.handle_backspace();
-                    }
-                    Some(Message::Text(c)) => {
-                        self.handle_text_input(c);
-                    }
+                    Some(Message::Esc) => self.state = UIState::ListView,
+                    Some(Message::Enter) => self.save_edited_text(),
+                    Some(Message::Left) => self.handle_cursor_left(),
+                    Some(Message::Right) => self.handle_cursor_right(),
+                    Some(Message::Backspace) => self.handle_backspace(),
+                    Some(Message::Text(c)) => self.handle_text_input(c),
                     _ => (),
                 },
             }
@@ -234,11 +232,12 @@ impl App {
                     "".to_string()
                 };
 
-                let parent_path_length = if let Some(display_path) = self.display_parent_item.clone() {
-                    display_path.len()
-                } else {
-                    0
-                };
+                let parent_path_length =
+                    if let Some(display_path) = self.display_parent_item.clone() {
+                        display_path.len()
+                    } else {
+                        0
+                    };
 
                 text = format!(
                     "  {}{}{}{}{}",
@@ -299,7 +298,14 @@ impl App {
 
     fn handle_key(&self, key: event::KeyEvent) -> Option<Message> {
         match key.code {
-            KeyCode::Esc => Some(Message::Esc),
+            KeyCode::Esc => match &self.display_parent_item {
+                None => Some(Message::Esc),
+                Some(path) => if path.len() > 0 {
+                    Some(Message::FocusOnParentItem)
+                } else {
+                    Some(Message::Esc)
+                }
+            },
             KeyCode::Enter => Some(Message::Enter),
             KeyCode::Up => Some(Message::Up),
             KeyCode::Down => Some(Message::Down),
@@ -314,7 +320,9 @@ impl App {
                     KeyCode::Char('i') => Some(Message::InsertChild),
                     KeyCode::Char('d') => Some(Message::Delete),
                     KeyCode::Char('j') => Some(Message::FocusOnCurrentItem),
-                    KeyCode::Char('u') => Some(Message::FocusOnParentItem),
+                    KeyCode::Char('c') => Some(Message::Copy),
+                    KeyCode::Char('x') => Some(Message::Cut),
+                    KeyCode::Char('v') => Some(Message::Paste),
                     _ => None,
                 },
                 UIState::EditView => {
@@ -358,6 +366,7 @@ impl App {
         let current_item = self.display.get_mut(self.selected_list_index).unwrap();
 
         if current_item.expanded == false {
+            self.expanded_items.insert(current_item.id_path.clone());
             let list_item_children = self.list.get_children(
                 self.list
                     .get_list_item(current_item.id_path.last().unwrap())
@@ -380,6 +389,7 @@ impl App {
                 );
             }
         } else {
+            self.expanded_items.retain(|p| *p != current_item.id_path);
             current_item.expanded = false;
             let current_path_length = current_item.id_path.len();
 
@@ -448,26 +458,34 @@ impl App {
             .id_path
             .clone();
         let item_to_delete_id = item_to_delete_id_path.last().unwrap();
+
+        let selected_item = self.get_current_display_item();
+
+        if let Some(item) = selected_item {
+            if item.expanded {
+                self.handle_expand();
+            }
+        }
+
         self.display.remove(self.selected_list_index);
 
-        match App::get_parent_from_path(&item_to_delete_id_path) {
-            Some(parent_id) => {
-                _ = self
-                    .list
-                    .remove_child_list_item(item_to_delete_id, &parent_id.to_string())
-            }
-            None => _ = self.list.remove_list_item(item_to_delete_id),
-        }
+        let parent = App::get_parent_from_path(&item_to_delete_id_path).map(|s| s.to_string());
+
+        _ = self
+            .list
+            .remove_child_list_item(item_to_delete_id, parent.as_ref());
 
         if self.display.len() > 0 {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
         }
 
+        self.update_display(None);
         self.save_list();
     }
 
     fn add_new_list_item(&mut self) {
         let item = just_lists_core::list_item::ListItem::new("".to_string());
+        let mut current_item_path: Vec<String>;
 
         if let Some(selected_list_entry) = self.get_current_display_item() {
             if selected_list_entry.expanded {
@@ -476,16 +494,17 @@ impl App {
         }
 
         if self.display.len() == 0 {
+            current_item_path = vec![item.id.clone()];
             self.list.add_list_item(item.clone());
             self.display.insert(
                 0,
                 ListEntry {
-                    id_path: vec![item.id.clone()],
+                    id_path: current_item_path.clone(),
                     expanded: false,
                 },
             )
         } else {
-            let mut current_item_path = self
+            current_item_path = self
                 .display
                 .get(self.selected_list_index)
                 .unwrap()
@@ -506,13 +525,13 @@ impl App {
             self.display.insert(
                 self.selected_list_index + 1,
                 ListEntry {
-                    id_path: current_item_path,
+                    id_path: current_item_path.clone(),
                     expanded: false,
                 },
             )
         }
 
-        self.handle_scroll(Message::Down);
+        self.update_display(Some(current_item_path));
         self.toggle_edit_mode();
         self.save_list();
     }
@@ -523,12 +542,19 @@ impl App {
         }
 
         let item = just_lists_core::list_item::ListItem::new("".to_string());
-        _ = self.list.add_child_list_item(
-            item,
-            self.display
+
+        let parent_path = self.display
                 .get(self.selected_list_index)
                 .unwrap()
                 .id_path
+                .clone();
+        
+        let mut child_path = parent_path.clone();
+        child_path.push(item.id.clone());
+
+        _ = self.list.add_child_list_item(
+            item,
+            parent_path
                 .last()
                 .unwrap(),
         );
@@ -542,7 +568,7 @@ impl App {
             self.handle_expand();
         }
 
-        self.handle_scroll(Message::Down);
+        self.update_display(Some(child_path));
         self.toggle_edit_mode();
 
         self.save_list();
@@ -632,7 +658,7 @@ impl App {
             }
         }
 
-        self.update_display();
+        self.update_display(None);
     }
 
     fn focus_on_parent(&mut self) {
@@ -654,14 +680,53 @@ impl App {
             self.display_parent_item = None;
         }
 
-        self.update_display();
+        self.update_display(None);
     }
 
     fn get_current_display_item(&self) -> Option<&ListEntry> {
         self.display.get(self.selected_list_index)
     }
 
-    fn update_display(&mut self) {
+    fn copy(&mut self) {
+        if let Some(item_id) = self.get_current_display_item() {
+            self.clipboard = Some(Clipboard {
+                action_type: ClipboardAction::Copy,
+                list_item_id: item_id.id_path.last().unwrap().clone(),
+            })
+        }
+    }
+
+    fn cut(&mut self) {
+        if let Some(item_id) = self.get_current_display_item() {
+            let parent_id = Self::get_parent_from_path(&item_id.id_path).map(|p| p.to_owned());
+            self.clipboard = Some(Clipboard {
+                action_type: ClipboardAction::Cut(parent_id),
+                list_item_id: item_id.id_path.last().unwrap().clone(),
+            })
+        }
+    }
+
+    fn paste(&mut self) {
+        if let Some(clipboard) = &self.clipboard {
+            let current_selected_item = self.get_current_display_item().cloned();
+            if let Some(selected_item) = current_selected_item {
+                _ = self.list.add_existing_child_list_item(
+                    &clipboard.list_item_id,
+                    selected_item.id_path.last().unwrap(),
+                );
+            }
+
+            if let ClipboardAction::Cut(previous_parent_id) = &clipboard.action_type {
+                _ = self
+                    .list
+                    .remove_child_list_item(&clipboard.list_item_id, previous_parent_id.as_ref());
+            }
+        }
+
+        self.update_display(None);
+    }
+
+    fn update_display(&mut self, custom_selected_item: Option<Vec<String>>) {
         let items_to_display: Vec<&just_lists_core::list_item::ListItem>;
 
         match self.display_parent_item.clone() {
@@ -694,6 +759,43 @@ impl App {
 
         if self.display.len() > 0 {
             self.selected_list_index = self.selected_list_index.clamp(0, self.display.len() - 1);
+        }
+
+        let mut display_index = 0;
+        
+        let old_selected_entry = self.display.get(self.selected_list_index.clone()).cloned();
+
+        while let Some(display_item) = self.display.get(display_index) {
+            if self.expanded_items.contains(&display_item.id_path) {
+                self.selected_list_index = display_index;
+                self.handle_expand();
+            }
+
+            display_index += 1;
+        }
+
+        match custom_selected_item {
+            None => {
+                    if self.display.len() > 0 {
+                        if let Some(old_selected_entry) = old_selected_entry {
+                            if let Some(index) = self.display.iter().position(|e| e.id_path == old_selected_entry.id_path) {
+                                self.selected_list_index = index;
+                            }
+                        }
+                    }
+            },
+            Some(select_id_path) => {
+                display_index = 0;
+
+                while let Some(display_item) = self.display.get(display_index) {
+                    if display_item.id_path == select_id_path {
+                        self.selected_list_index = display_index;
+                        break;
+                    }
+
+                    display_index += 1;
+                }
+            }
         }
     }
 }
