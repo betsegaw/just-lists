@@ -36,6 +36,10 @@ jl your-tasks.json
 jl my-new-list.json
 ```
 
+**Important Note**: When starting with no file specified (`jl`), you'll see a sample list that is only displayed in the terminal and **not saved to any file**. Any changes made to this sample list will only persist during the current session and will be lost when you exit.
+
+To save your lists, always provide a file path as an argument or use the "New" feature to create a new list file.
+
 ## Basic Usage
 
 ### Main Controls
