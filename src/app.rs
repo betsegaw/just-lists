@@ -168,10 +168,12 @@ impl App {
             .constraints(vec![Constraint::Length(3), Constraint::Percentage(100)])
             .split(frame.area());
 
-        let current_path = match self.file_path.clone() {
+        let mut current_path = match self.file_path.clone() {
             Some(path) => path.to_str().unwrap().to_string(),
             None => "Sample".to_string(),
         };
+
+        current_path.push_str(": ");
 
         let title_block = Block::new()
             .border_type(BorderType::Rounded)
@@ -187,8 +189,8 @@ impl App {
                 let mut path = current_path;
                 for id in parent_item {
                     let item = self.list.get_list_item(&id).unwrap();
-                    path.push('/');
                     path.push_str(item.value.clone().as_str());
+                    path.push_str(" / ");
                 }
 
                 title_paragraph = Paragraph::new(path);
