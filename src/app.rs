@@ -221,9 +221,13 @@ impl App {
 
                 let children_count = self.list.get_children(list_item).len();
                 let children_count_text = if children_count > 0 {
-                    format!("({}) ", children_count)
+                    if todo_item.expanded {
+                        "▼ ".to_string()
+                    } else {
+                        "▶ ".to_string()
+                    }
                 } else {
-                    "".to_string()
+                    "  ".to_string()
                 };
 
                 let debug_text = if self.debug {
@@ -242,8 +246,8 @@ impl App {
                 text = format!(
                     "  {}{}{}{}{}",
                     "      ".repeat(todo_item.id_path.len() - parent_path_length - 1),
-                    check_box_state,
                     children_count_text,
+                    check_box_state,
                     list_item.value.clone(),
                     debug_text
                 );
