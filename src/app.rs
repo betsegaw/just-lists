@@ -3,7 +3,7 @@ use core::panic;
 use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
 use ratatui::{prelude::*, widgets::BorderType};
-use ratatui::widgets::ListState;
+use ratatui::widgets::{ListState, ScrollbarState, Scrollbar};
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
@@ -264,13 +264,29 @@ impl App {
             })
             .collect();
 
+        let list_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Percentage(100), Constraint::Length(1)])
+            .split(layout[1]);
+
         // Create a List from all list items and highlight the currently selected one
         let list = WidgetList::new(items).block(block).highlight_symbol(">");
         let mut list_state = ListState::default();
 
         list_state.select(Some(self.selected_list_index));
 
-        frame.render_stateful_widget(list, layout[1], &mut list_state);
+        frame.render_stateful_widget(list, list_layout[0], &mut list_state);
+
+        let mut scrollbar_state = ScrollbarState::default()
+            .content_length(self.display.len())
+            .position(self.selected_list_index);
+        let scrollbar = Scrollbar::default()
+            .begin_symbol(Some("▲"))
+            .end_symbol(Some("▼"))
+            .track_symbol(None)
+            .thumb_symbol("│");
+
+        frame.render_stateful_widget(scrollbar, list_layout[1], &mut scrollbar_state);
 
         match self.state {
             UIState::EditView => {
