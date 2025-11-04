@@ -736,6 +736,8 @@ impl App {
     fn update_display(&mut self, custom_selected_item: Option<Vec<String>>) {
         let items_to_display: Vec<&just_lists_core::list_item::ListItem>;
 
+        let old_selected_entry = self.display.get(self.selected_list_index.clone()).cloned();
+
         match self.display_parent_item.clone() {
             None => {
                 items_to_display = self.list.get_top_level_list_items();
@@ -769,8 +771,6 @@ impl App {
         }
 
         let mut display_index = 0;
-        
-        let old_selected_entry = self.display.get(self.selected_list_index.clone()).cloned();
 
         while let Some(display_item) = self.display.get(display_index) {
             if self.expanded_items.contains(&display_item.id_path) {
