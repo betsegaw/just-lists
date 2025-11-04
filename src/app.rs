@@ -728,6 +728,7 @@ impl App {
         }
 
         self.update_display(None);
+        self.save_list();
     }
 
     fn update_display(&mut self, custom_selected_item: Option<Vec<String>>) {
