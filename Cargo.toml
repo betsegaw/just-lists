@@ -1,6 +1,6 @@
 [package]
 name = "just-lists"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "MIT"
 keywords = ["task-manager", "ratatui", "terminal-ui", "lists"]
@@ -14,7 +14,7 @@ repository = "https://github.com/betsegaw/just-lists"
 clap = { version = "4.5.51", features = ["derive"] }
 color-eyre = "0.6.5"
 crossterm = "0.29.0"
-just-lists-core = { path = "just-lists-core", version = "0.1.1" }
+just-lists-core = { path = "just-lists-core", version = "0.1.2" }
 ratatui = { version = "0.29.0", features = ["all-widgets"] }
 
 [[bin]]
