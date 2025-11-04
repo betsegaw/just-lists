@@ -241,7 +241,7 @@ impl App {
 
                 text = format!(
                     "  {}{}{}{}{}",
-                    "  ".repeat(todo_item.id_path.len() - parent_path_length - 1),
+                    "      ".repeat(todo_item.id_path.len() - parent_path_length - 1),
                     check_box_state,
                     children_count_text,
                     list_item.value.clone(),
