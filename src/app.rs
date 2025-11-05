@@ -388,11 +388,13 @@ impl App {
 
         if current_item.expanded == false {
             self.expanded_items.insert(current_item.id_path.clone());
-            let list_item_children = self.list.get_children(
+            let mut list_item_children = self.list.get_children(
                 self.list
                     .get_list_item(current_item.id_path.last().unwrap())
                     .unwrap(),
             );
+
+            list_item_children.reverse();
 
             current_item.expanded = true;
 
