@@ -20,8 +20,8 @@ use ratatui::{
 use clap::Parser;
 
 #[derive(Parser)]
-struct Inputs {
-    file: Option<PathBuf>,
+pub struct Inputs {
+    pub file: Option<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -82,11 +82,10 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> App {
-        let inputs = Inputs::parse();
+    pub fn new(file: Option<PathBuf>) -> App {
         let mut list: List;
-        if inputs.file.is_some() {
-            list = List::from_string(App::open_or_create_file(&inputs.file.clone().unwrap()));
+        if file.is_some() {
+            list = List::from_string(App::open_or_create_file(&file.clone().unwrap()));
         } else {
             list = get_sample_list();
         }
@@ -108,7 +107,7 @@ impl App {
             display: Vec::new(),
             cursor_index: 0,
             edit_text: "".to_string(),
-            file_path: inputs.file,
+            file_path: file,
             display_parent_item: None,
             clipboard: None,
             debug: false,
