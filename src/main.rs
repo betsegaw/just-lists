@@ -1,9 +1,9 @@
 mod app;
 
 use app::App;
+use clap::Parser;
 use color_eyre::Result;
 use ratatui;
-use clap::Parser;
 
 use crate::app::Inputs;
 

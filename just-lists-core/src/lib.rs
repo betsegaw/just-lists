@@ -13,11 +13,19 @@ pub fn get_sample_list() -> List {
     let parent_1_id = top_item_1.id.clone();
     let parent_2_id = top_item_2.id.clone();
 
-    list.add_list_item(top_item_1);
-    list.add_list_item(top_item_2);
+    list.add_list_item(top_item_1, None);
+    list.add_list_item(top_item_2, None);
 
-    let _ = list.add_child_list_item(ListItem::new("First child item".to_string()), &parent_1_id);
-    let _ = list.add_child_list_item(ListItem::new("Second child item".to_string()), &parent_2_id);
+    let _ = list.add_child_list_item(
+        ListItem::new("First child item".to_string()),
+        &parent_1_id,
+        None,
+    );
+    let _ = list.add_child_list_item(
+        ListItem::new("Second child item".to_string()),
+        &parent_2_id,
+        None,
+    );
 
     list
 }
@@ -37,7 +45,7 @@ mod tests {
     #[test]
     fn can_add_item_to_list() {
         let mut list = List::new();
-        list.add_list_item(ListItem::new("First list item".to_string()));
+        list.add_list_item(ListItem::new("First list item".to_string()), None);
 
         let mut list_length = list.get_top_level_list_items().len();
         assert!(
@@ -45,7 +53,7 @@ mod tests {
             "List item length was not 1. Actual: {list_length}"
         );
 
-        list.add_list_item(ListItem::new("Second item".to_string()));
+        list.add_list_item(ListItem::new("Second item".to_string()), None);
 
         list_length = list.get_top_level_list_items().len();
         assert!(

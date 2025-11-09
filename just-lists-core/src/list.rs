@@ -26,27 +26,39 @@ impl List {
         serde_json::from_str(&serialized_string).unwrap()
     }
 
-    pub fn add_list_item(&mut self, item: ListItem) {
-        self.top_level_items.push(item.id.clone());
-        self.list_item_store.insert(item.id.clone(), item);
+    pub fn add_list_item(&mut self, item: ListItem, index: Option<usize>) {
+        self.list_item_store.insert(item.id.clone(), item.clone());
+
+        let insertion_index = match index {
+            Some(index) => index,
+            None => self.top_level_items.len(),
+        };
+
+        self.top_level_items.insert(insertion_index, item.id);
     }
 
     pub fn add_existing_child_list_item(
         &mut self,
         item_id: &String,
         parent_id: &String,
-    ) -> Result<(), ListItemInsertionError> {
+        index: Option<usize>,
+    ) -> Result<(), ListItemTaskError> {
         let parent = match self.list_item_store.get_mut(parent_id) {
             Some(parent) => parent,
             None => {
-                return Err(ListItemInsertionError::ParentIdDoesNotExist);
+                return Err(ListItemTaskError::ParentIdDoesNotExist);
             }
         };
 
         if !parent.children.contains(&item_id) {
-            parent.children.push(item_id.clone());
+            let insertion_index = match index {
+                Some(index) => index,
+                None => parent.children.len(),
+            };
+
+            parent.children.insert(insertion_index, item_id.clone());
         } else {
-            return Err(ListItemInsertionError::ParentAlreadyHasItem);
+            return Err(ListItemTaskError::ParentAlreadyHasItem);
         }
 
         Ok(())
@@ -56,7 +68,8 @@ impl List {
         &mut self,
         item: ListItem,
         parent_id: &String,
-    ) -> Result<(), ListItemInsertionError> {
+        index: Option<usize>,
+    ) -> Result<(), ListItemTaskError> {
         let mut item_does_not_exist: bool = false;
 
         // check if item already exists
@@ -70,7 +83,7 @@ impl List {
             self.list_item_store.insert(item_id.clone(), item);
         }
 
-        self.add_existing_child_list_item(&item_id, parent_id)
+        self.add_existing_child_list_item(&item_id, parent_id, index)
     }
 
     pub fn get_top_level_list_items(&self) -> Vec<&ListItem> {
@@ -138,11 +151,43 @@ impl List {
     pub fn into_string(&self) -> String {
         serde_json::to_string(&self).unwrap()
     }
+
+    pub fn get_index_of_child(
+        &self,
+        child_id: &String,
+        parent_id: &String,
+    ) -> Result<usize, ListItemTaskError> {
+        if let Some(parent) = self.get_list_item(&parent_id) {
+            for c in parent.children.iter().enumerate() {
+                if c.1 == child_id {
+                    return Ok(c.0);
+                }
+            }
+
+            Err(ListItemTaskError::ChildIdDoesNotExist)
+        } else {
+            Err(ListItemTaskError::ParentIdDoesNotExist)
+        }
+    }
+
+    pub fn get_index_of_top_level_item(
+        &self,
+        child_id: &String,
+    ) -> Result<usize, ListItemTaskError> {
+        for c in self.top_level_items.iter().enumerate() {
+            if c.1 == child_id {
+                return Ok(c.0);
+            }
+        }
+
+        return Err(ListItemTaskError::ChildIdDoesNotExist);
+    }
 }
 
-pub enum ListItemInsertionError {
+pub enum ListItemTaskError {
     ParentAlreadyHasItem,
     ParentIdDoesNotExist,
+    ChildIdDoesNotExist,
 }
 
 #[derive(Debug)]

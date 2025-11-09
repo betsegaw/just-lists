@@ -2,13 +2,13 @@ use color_eyre::{Result, eyre::Ok};
 use core::panic;
 use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
+use ratatui::widgets::{ListState, Scrollbar, ScrollbarState};
 use ratatui::{prelude::*, widgets::BorderType};
-use ratatui::widgets::{ListState, ScrollbarState, Scrollbar};
+use std::collections::HashSet;
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::collections::HashSet;
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -93,7 +93,10 @@ impl App {
         let list_is_empty = list.get_top_level_list_items().len() == 0;
 
         if list_is_empty {
-            list.add_list_item(just_lists_core::list_item::ListItem::new("".to_string()));
+            list.add_list_item(
+                just_lists_core::list_item::ListItem::new("".to_string()),
+                None,
+            );
         }
 
         let app = App {
@@ -321,10 +324,12 @@ impl App {
         match key.code {
             KeyCode::Esc => match &self.display_parent_item {
                 None => Some(Message::Esc),
-                Some(path) => if path.len() > 0 {
-                    Some(Message::FocusOnParentItem)
-                } else {
-                    Some(Message::Esc)
+                Some(path) => {
+                    if path.len() > 0 {
+                        Some(Message::FocusOnParentItem)
+                    } else {
+                        Some(Message::Esc)
+                    }
                 }
             },
             KeyCode::Enter => Some(Message::Enter),
@@ -518,7 +523,7 @@ impl App {
 
         if self.display.len() == 0 {
             current_item_path = vec![item.id.clone()];
-            self.list.add_list_item(item.clone());
+            self.list.add_list_item(item.clone(), None);
             self.display.insert(
                 0,
                 ListEntry {
@@ -534,15 +539,30 @@ impl App {
                 .id_path
                 .clone();
 
-            current_item_path.remove(current_item_path.len() - 1);
+            let selected_item = current_item_path.remove(current_item_path.len() - 1);
             current_item_path.push(item.id.clone());
 
             if current_item_path.len() == 1 {
-                self.list.add_list_item(item);
+                let index_of_selection = match self.list.get_index_of_top_level_item(&selected_item)
+                {
+                    std::result::Result::Ok(index) => Some(index + 1),
+                    Err(_) => None,
+                };
+
+                self.list.add_list_item(item, index_of_selection);
             } else {
+                let parent_id = current_item_path[current_item_path.len() - 2].clone();
+                let index_of_child = match self.list.get_index_of_child(&selected_item, &parent_id)
+                {
+                    core::result::Result::Ok(index) => index,
+                    Err(_) => {
+                        return ();
+                    }
+                };
+
                 _ = self
                     .list
-                    .add_child_list_item(item, &current_item_path[current_item_path.len() - 2]);
+                    .add_child_list_item(item, &parent_id, Some(index_of_child + 1));
             }
 
             self.display.insert(
@@ -566,21 +586,19 @@ impl App {
 
         let item = just_lists_core::list_item::ListItem::new("".to_string());
 
-        let parent_path = self.display
-                .get(self.selected_list_index)
-                .unwrap()
-                .id_path
-                .clone();
-        
+        let parent_path = self
+            .display
+            .get(self.selected_list_index)
+            .unwrap()
+            .id_path
+            .clone();
+
         let mut child_path = parent_path.clone();
         child_path.push(item.id.clone());
 
-        _ = self.list.add_child_list_item(
-            item,
-            parent_path
-                .last()
-                .unwrap(),
-        );
+        _ = self
+            .list
+            .add_child_list_item(item, parent_path.last().unwrap(), None);
 
         let current_item = self.display.get_mut(self.selected_list_index).unwrap();
 
@@ -736,6 +754,7 @@ impl App {
                 _ = self.list.add_existing_child_list_item(
                     &clipboard.list_item_id,
                     selected_item.id_path.last().unwrap(),
+                    None,
                 );
             }
 
@@ -800,14 +819,18 @@ impl App {
 
         match custom_selected_item {
             None => {
-                    if self.display.len() > 0 {
-                        if let Some(old_selected_entry) = old_selected_entry {
-                            if let Some(index) = self.display.iter().position(|e| e.id_path == old_selected_entry.id_path) {
-                                self.selected_list_index = index;
-                            }
+                if self.display.len() > 0 {
+                    if let Some(old_selected_entry) = old_selected_entry {
+                        if let Some(index) = self
+                            .display
+                            .iter()
+                            .position(|e| e.id_path == old_selected_entry.id_path)
+                        {
+                            self.selected_list_index = index;
                         }
                     }
-            },
+                }
+            }
             Some(select_id_path) => {
                 display_index = 0;
 
