@@ -160,8 +160,14 @@ impl App {
         }
     }
 
-    const SELECTED_STYLE: Style = Style::new()
-        .bg(Color::DarkGray)
+    const SELECTED_INCOMPLETE_STYLE: Style = Style::new()
+        .bg(Color::Yellow)
+        .fg(Color::Black)
+        .add_modifier(Modifier::BOLD);
+
+    const SELECTED_COMPLETE_STYLE: Style = Style::new()
+        .bg(Color::Green)
+        .fg(Color::Black)
         .add_modifier(Modifier::BOLD);
 
     fn view(&self, frame: &mut Frame) {
@@ -259,7 +265,11 @@ impl App {
                 let mut item = ListItem::from(text).style(color);
 
                 if i == self.selected_list_index {
-                    item = item.style(Self::SELECTED_STYLE);
+                    if list_item.completed {
+                        item = item.style(Self::SELECTED_COMPLETE_STYLE);
+                    } else {
+                        item = item.style(Self::SELECTED_INCOMPLETE_STYLE);
+                    }
                 }
 
                 return item;
