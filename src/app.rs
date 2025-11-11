@@ -217,6 +217,8 @@ impl App {
         frame.render_widget(title_paragraph, layout[0]);
 
         let block = Block::new()
+            .title("")
+            .title("Tasks")
             .border_type(Self::BASE_UI_BORDER_TYPE)
             .border_style(Self::BASE_UI_COLOR)
             .borders(Borders::ALL);
