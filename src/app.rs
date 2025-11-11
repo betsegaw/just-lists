@@ -5,10 +5,10 @@ use just_lists_core::{get_sample_list, list::List};
 use ratatui::widgets::{ListState, Scrollbar, ScrollbarState};
 use ratatui::{prelude::*, widgets::BorderType};
 use std::collections::HashSet;
-use std::{fs, i32};
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::{fs, i32};
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -160,7 +160,6 @@ impl App {
         }
     }
 
-
     const BASE_UI_BORDER_TYPE: BorderType = BorderType::Thick;
     const BASE_UI_COLOR: Color = Color::Rgb(158, 170, 248);
 
@@ -283,15 +282,21 @@ impl App {
                 let initial_space_indent = format!(
                     "{}{}",
                     "  ",
-                    "      ".repeat((todo_item.id_path.len() - parent_path_length - 1).clamp(0, list_box_text_width)),
+                    "      ".repeat(
+                        (todo_item.id_path.len() - parent_path_length - 1)
+                            .clamp(0, list_box_text_width)
+                    ),
                 );
 
                 let subsequent_space_indent = format!(
                     "{}{}",
                     "      ",
-                    "      ".repeat((todo_item.id_path.len() - parent_path_length - 1).clamp(0, list_box_text_width)),
+                    "      ".repeat(
+                        (todo_item.id_path.len() - parent_path_length - 1)
+                            .clamp(0, list_box_text_width)
+                    ),
                 );
-                
+
                 let options = textwrap::Options::new(list_box_text_width)
                     .initial_indent(&initial_space_indent)
                     .subsequent_indent(&subsequent_space_indent);
@@ -315,10 +320,14 @@ impl App {
         let mut list_state = ListState::default();
 
         list_state.select(Some(self.selected_list_index));
-        
+
         let scroll_bar_layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(1), Constraint::Percentage(100), Constraint::Length(1)])
+            .constraints(vec![
+                Constraint::Length(1),
+                Constraint::Percentage(100),
+                Constraint::Length(1),
+            ])
             .split(list_layout[1]);
 
         frame.render_stateful_widget(list, layout[1], &mut list_state);
@@ -333,7 +342,7 @@ impl App {
             .thumb_symbol("│")
             .style(Self::BASE_UI_COLOR);
 
-        frame.render_widget(Clear, scroll_bar_layout[1]);    
+        frame.render_widget(Clear, scroll_bar_layout[1]);
         frame.render_stateful_widget(scrollbar, scroll_bar_layout[1], &mut scrollbar_state);
 
         match self.state {
@@ -360,8 +369,7 @@ impl App {
                     if c == '\n' {
                         line_number += 1;
                         column_number = 0;
-                    }
-                    else {
+                    } else {
                         column_number += 1;
                     }
 
@@ -372,10 +380,11 @@ impl App {
                     current_index_number += 1;
                 }
 
-                let text_line_offset = (line_number as i32 + 1 - text_edit_vertical as i32).clamp(0, i32::MAX);
+                let text_line_offset =
+                    (line_number as i32 + 1 - text_edit_vertical as i32).clamp(0, i32::MAX);
 
                 line_number -= text_line_offset;
-                
+
                 let final_edit_display_text: String = text_wrapped_collection
                     .into_iter()
                     .skip(text_line_offset as usize)
