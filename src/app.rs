@@ -286,8 +286,13 @@ impl App {
         let mut list_state = ListState::default();
 
         list_state.select(Some(self.selected_list_index));
+        
+        let scroll_bar_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Length(1), Constraint::Percentage(100), Constraint::Length(1)])
+            .split(list_layout[1]);
 
-        frame.render_stateful_widget(list, list_layout[0], &mut list_state);
+        frame.render_stateful_widget(list, layout[1], &mut list_state);
 
         let mut scrollbar_state = ScrollbarState::default()
             .content_length(self.display.len())
@@ -298,7 +303,8 @@ impl App {
             .track_symbol(None)
             .thumb_symbol("│");
 
-        frame.render_stateful_widget(scrollbar, list_layout[1], &mut scrollbar_state);
+        frame.render_widget(Clear, scroll_bar_layout[1]);    
+        frame.render_stateful_widget(scrollbar, scroll_bar_layout[1], &mut scrollbar_state);
 
         match self.state {
             UIState::EditView => {
