@@ -180,7 +180,7 @@ impl App {
             .constraints(vec![Constraint::Length(3), Constraint::Percentage(100)])
             .split(frame.area());
 
-        let mut current_path = "/ ".to_string();
+        let current_path = "/ ".to_string();
 
         let current_file = match self.file_path.clone() {
             Some(path) => path.to_str().unwrap().to_string(),
