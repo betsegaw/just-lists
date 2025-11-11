@@ -165,13 +165,11 @@ impl App {
 
     const SELECTED_INCOMPLETE_STYLE: Style = Style::new()
         .bg(Self::BASE_UI_COLOR)
-        .fg(Color::Black)
-        .add_modifier(Modifier::BOLD);
+        .fg(Color::Black);
 
     const SELECTED_COMPLETE_STYLE: Style = Style::new()
         .bg(Color::Green)
-        .fg(Color::Black)
-        .add_modifier(Modifier::BOLD);
+        .fg(Color::Black);
 
     fn view(&self, frame: &mut Frame) {
         let layout = Layout::default()
