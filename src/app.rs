@@ -192,6 +192,7 @@ impl App {
             .border_style(Self::BASE_UI_COLOR)
             .title("")
             .title(current_file)
+            .title_style(Style::default().add_modifier(Modifier::BOLD))
             .borders(Borders::ALL);
 
         let mut title_paragraph: Paragraph;
@@ -219,6 +220,7 @@ impl App {
         let block = Block::new()
             .title("")
             .title("Tasks")
+            .title_style(Style::default().add_modifier(Modifier::BOLD))
             .border_type(Self::BASE_UI_BORDER_TYPE)
             .border_style(Self::BASE_UI_COLOR)
             .borders(Borders::ALL);
