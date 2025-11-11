@@ -180,16 +180,18 @@ impl App {
             .constraints(vec![Constraint::Length(3), Constraint::Percentage(100)])
             .split(frame.area());
 
-        let mut current_path = match self.file_path.clone() {
+        let mut current_path = "/ ".to_string();
+
+        let current_file = match self.file_path.clone() {
             Some(path) => path.to_str().unwrap().to_string(),
             None => "Sample".to_string(),
         };
 
-        current_path.push_str(": ");
-
         let title_block = Block::new()
             .border_type(Self::BASE_UI_BORDER_TYPE)
             .border_style(Self::BASE_UI_COLOR)
+            .title("")
+            .title(current_file)
             .borders(Borders::ALL);
 
         let mut title_paragraph: Paragraph;
