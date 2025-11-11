@@ -5,7 +5,7 @@ use just_lists_core::{get_sample_list, list::List};
 use ratatui::widgets::{ListState, Scrollbar, ScrollbarState};
 use ratatui::{prelude::*, widgets::BorderType};
 use std::collections::HashSet;
-use std::fs;
+use std::{fs, i32};
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -225,6 +225,13 @@ impl App {
             .border_style(Self::BASE_UI_COLOR)
             .borders(Borders::ALL);
 
+        let list_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Percentage(100), Constraint::Length(1)])
+            .split(layout[1]);
+
+        let list_box_text_width: usize = (list_layout[0].width - 2).into();
+
         let items: Vec<ListItem> = self
             .display
             .iter()
@@ -242,7 +249,7 @@ impl App {
                 };
 
                 let children_count = self.list.get_children(list_item).len();
-                let children_count_text = if children_count > 0 {
+                let expandable_symbol_text = if children_count > 0 {
                     if todo_item.expanded {
                         "▼ ".to_string()
                     } else {
@@ -266,14 +273,29 @@ impl App {
                     };
 
                 text = format!(
-                    "  {}{}{}{}{}",
-                    "      ".repeat(todo_item.id_path.len() - parent_path_length - 1),
-                    children_count_text,
+                    "{}{}{}{}",
+                    expandable_symbol_text,
                     check_box_state,
                     list_item.value.clone(),
                     debug_text
                 );
 
+                let initial_space_indent = format!(
+                    "{}{}",
+                    "  ",
+                    "      ".repeat((todo_item.id_path.len() - parent_path_length - 1).clamp(0, list_box_text_width)),
+                );
+
+                let subsequent_space_indent = format!(
+                    "{}{}",
+                    "      ",
+                    "      ".repeat((todo_item.id_path.len() - parent_path_length - 1).clamp(0, list_box_text_width)),
+                );
+                
+                let options = textwrap::Options::new(list_box_text_width)
+                    .initial_indent(&initial_space_indent)
+                    .subsequent_indent(&subsequent_space_indent);
+                let text = textwrap::fill(&text, options);
                 let mut item = ListItem::from(text).style(color);
 
                 if i == self.selected_list_index {
@@ -287,11 +309,6 @@ impl App {
                 return item;
             })
             .collect();
-
-        let list_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Percentage(100), Constraint::Length(1)])
-            .split(layout[1]);
 
         // Create a List from all list items and highlight the currently selected one
         let list = WidgetList::new(items).block(block).highlight_symbol(">");
@@ -322,17 +339,56 @@ impl App {
         match self.state {
             UIState::EditView => {
                 let block = Block::new()
+                    .title("Edit")
                     .border_type(Self::BASE_UI_BORDER_TYPE)
                     .border_style(Self::BASE_UI_COLOR)
                     .borders(Borders::ALL);
-                let edit_content = Paragraph::new(self.edit_text.clone()).block(block);
                 let area = Self::popup_area(frame.area(), 60, 20);
+
+                let text_edit_horizon: usize = (area.width - 4).into();
+                let text_edit_vertical: usize = (area.height - 2).into();
+
+                let options = textwrap::Options::new(text_edit_horizon);
+                let text_wrapped_collection = textwrap::wrap(&self.edit_text, options);
+                let wrapped_content = text_wrapped_collection.join("\n");
+
+                let mut column_number = 0;
+                let mut line_number = 0;
+                let mut current_index_number = 0;
+
+                for c in wrapped_content.chars() {
+                    if c == '\n' {
+                        line_number += 1;
+                        column_number = 0;
+                    }
+                    else {
+                        column_number += 1;
+                    }
+
+                    if current_index_number == self.cursor_index {
+                        break;
+                    }
+
+                    current_index_number += 1;
+                }
+
+                let text_line_offset = (line_number as i32 + 1 - text_edit_vertical as i32).clamp(0, i32::MAX);
+
+                line_number -= text_line_offset;
+                
+                let final_edit_display_text: String = text_wrapped_collection
+                    .into_iter()
+                    .skip(text_line_offset as usize)
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                let edit_content = Paragraph::new(final_edit_display_text).block(block);
                 frame.render_widget(Clear, area);
                 frame.render_widget(edit_content, area);
 
                 frame.set_cursor_position(Position::new(
-                    area.x + u16::try_from(self.cursor_index).unwrap() + 1,
-                    area.y + 1,
+                    area.x + 1 + u16::try_from(column_number).unwrap(),
+                    area.y + 1 + u16::try_from(line_number).unwrap(),
                 ));
             }
             _ => (),
