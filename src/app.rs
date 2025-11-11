@@ -160,8 +160,12 @@ impl App {
         }
     }
 
+
+    const BASE_UI_BORDER_TYPE: BorderType = BorderType::Thick;
+    const BASE_UI_COLOR: Color = Color::Rgb(158, 170, 248);
+
     const SELECTED_INCOMPLETE_STYLE: Style = Style::new()
-        .bg(Color::Yellow)
+        .bg(Self::BASE_UI_COLOR)
         .fg(Color::Black)
         .add_modifier(Modifier::BOLD);
 
@@ -184,7 +188,8 @@ impl App {
         current_path.push_str(": ");
 
         let title_block = Block::new()
-            .border_type(BorderType::Rounded)
+            .border_type(Self::BASE_UI_BORDER_TYPE)
+            .border_style(Self::BASE_UI_COLOR)
             .borders(Borders::ALL);
 
         let mut title_paragraph: Paragraph;
@@ -210,7 +215,8 @@ impl App {
         frame.render_widget(title_paragraph, layout[0]);
 
         let block = Block::new()
-            .border_type(BorderType::Rounded)
+            .border_type(Self::BASE_UI_BORDER_TYPE)
+            .border_style(Self::BASE_UI_COLOR)
             .borders(Borders::ALL);
 
         let items: Vec<ListItem> = self
@@ -301,7 +307,8 @@ impl App {
             .begin_symbol(Some("▲"))
             .end_symbol(Some("▼"))
             .track_symbol(None)
-            .thumb_symbol("│");
+            .thumb_symbol("│")
+            .style(Self::BASE_UI_COLOR);
 
         frame.render_widget(Clear, scroll_bar_layout[1]);    
         frame.render_stateful_widget(scrollbar, scroll_bar_layout[1], &mut scrollbar_state);
@@ -309,7 +316,8 @@ impl App {
         match self.state {
             UIState::EditView => {
                 let block = Block::new()
-                    .border_type(BorderType::Rounded)
+                    .border_type(Self::BASE_UI_BORDER_TYPE)
+                    .border_style(Self::BASE_UI_COLOR)
                     .borders(Borders::ALL);
                 let edit_content = Paragraph::new(self.edit_text.clone()).block(block);
                 let area = Self::popup_area(frame.area(), 60, 20);
