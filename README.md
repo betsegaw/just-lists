@@ -1,3 +1,5 @@
+[![Rust](https://github.com/betsegaw/just-lists/actions/workflows/rust.yml/badge.svg)](https://github.com/betsegaw/just-lists/actions/workflows/rust.yml)
+
 # Just Lists - Simple Terminal Task Manager
 
 **A powerful yet simple way to organize your tasks in the terminal**
