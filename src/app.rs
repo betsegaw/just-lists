@@ -1,4 +1,5 @@
 use color_eyre::{Result, eyre::Ok};
+use just_lists_core::list_item::State;
 use core::panic;
 use crossterm::event::{self, Event, KeyCode};
 use just_lists_core::{get_sample_list, list::List};
@@ -171,6 +172,10 @@ impl App {
         .bg(Color::Green)
         .fg(Color::Black);
 
+    const SELECTED_BLOCKED_STYLE: Style = Style::new()
+        .bg(Color::Red)
+        .fg(Color::Black);
+
     fn view(&self, frame: &mut Frame) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -242,10 +247,11 @@ impl App {
                     .list
                     .get_list_item(todo_item.id_path.last().unwrap())
                     .unwrap();
-                let (color, check_box_state) = if list_item.completed {
-                    (Color::Green, "✔ ")
-                } else {
-                    (Color::Gray, "☐ ")
+
+                let (color, check_box_state) = match list_item.state {
+                    State::Pending => (Color::Gray, "☐ "),
+                    State::Completed => (Color::Green, "✔ "),
+                    State::Blocked => (Color::Red, "⛔ "),
                 };
 
                 let children_count = self.list.get_children(list_item).len();
@@ -305,10 +311,16 @@ impl App {
                 let mut item = ListItem::from(text).style(color);
 
                 if i == self.selected_list_index {
-                    if list_item.completed {
-                        item = item.style(Self::SELECTED_COMPLETE_STYLE);
-                    } else {
-                        item = item.style(Self::SELECTED_INCOMPLETE_STYLE);
+                    match list_item.state {
+                        State::Completed => {
+                            item = item.style(Self::SELECTED_COMPLETE_STYLE);
+                        }, 
+                        State::Pending => {
+                            item = item.style(Self::SELECTED_INCOMPLETE_STYLE);
+                        },
+                        State::Blocked => {
+                            item = item.style(Self::SELECTED_BLOCKED_STYLE);
+                        }
                     }
                 }
 
@@ -722,7 +734,17 @@ impl App {
             .get_mut_list_item(list_entry.id_path.last().unwrap())
             .unwrap();
 
-        list_item.completed = !list_item.completed;
+        match list_item.state {
+            State::Pending => {
+                list_item.state = State::Completed;
+            },
+            State::Completed => {
+                list_item.state = State::Blocked
+            },
+            State::Blocked => {
+                list_item.state = State::Pending
+            }
+        };
 
         self.save_list();
     }

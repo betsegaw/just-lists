@@ -6,7 +6,21 @@ pub struct ListItem {
     pub id: String,
     pub value: String,
     pub(crate) children: Vec<String>,
-    pub completed: bool,
+    #[serde(default = "State::default")]
+    pub state: State,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum State {
+    Pending,
+    Completed,
+    Blocked
+}
+
+impl State {
+    fn default() -> Self {
+        State::Pending
+    }
 }
 
 impl ListItem {
@@ -15,7 +29,7 @@ impl ListItem {
             id: Self::random_string_from_chars(32),
             value: value,
             children: Vec::<String>::new(),
-            completed: false,
+            state: State::Pending,
         }
     }
 
