@@ -179,10 +179,13 @@ impl App {
 
         let current_path = "/ ".to_string();
 
-        let current_file = match self.file_path.clone() {
+        let mut current_file = match self.file_path.clone() {
             Some(path) => path.to_str().unwrap().to_string(),
-            None => "Sample".to_string(),
+            None => "[Sample]".to_string(),
         };
+
+        current_file.insert(0, '[');
+        current_file.insert(current_file.len(), ']');
 
         let title_block = Block::new()
             .border_type(Self::BASE_UI_BORDER_TYPE)
@@ -216,7 +219,7 @@ impl App {
 
         let block = Block::new()
             .title("")
-            .title("Tasks")
+            .title("[Tasks]")
             .title_style(Style::default().add_modifier(Modifier::BOLD))
             .border_type(Self::BASE_UI_BORDER_TYPE)
             .border_style(Self::BASE_UI_COLOR)
