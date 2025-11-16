@@ -263,7 +263,7 @@ impl App {
 
         let block = Block::new()
             .title("")
-            .title("[Tasks]")
+            .title("[List]")
             .title_style(Style::default().add_modifier(Modifier::BOLD))
             .border_type(Self::BASE_UI_BORDER_TYPE)
             .border_style(Self::BASE_UI_COLOR)
