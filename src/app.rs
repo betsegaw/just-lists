@@ -58,6 +58,7 @@ enum Message {
     Text(char),
 }
 
+#[derive(PartialEq)]
 enum ClipboardAction {
     Cut(Option<String>),
     Copy,
@@ -219,8 +220,46 @@ impl App {
         };
 
         title_paragraph = title_paragraph.block(title_block);
+        
+        let title_layout: Rect;
 
-        frame.render_widget(title_paragraph, layout[0]);
+        if let Some(clipboard) = &self.clipboard {
+            let top_bar_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Percentage(100), Constraint::Percentage(100)])
+            .split(layout[0]);
+
+            title_layout = top_bar_layout[0];
+
+            let clip_type_title = if clipboard.action_type == ClipboardAction::Copy { "(Copy)" } else { "(Cut)" };
+
+            let clipboard_block = Block::new()
+                .border_type(Self::BASE_UI_BORDER_TYPE)
+                .border_style(Self::BASE_UI_COLOR)
+                .title("")
+                .title("Clipboard")
+                .title(clip_type_title)
+                .title_style(Style::default().add_modifier(Modifier::BOLD))
+                .borders(Borders::ALL);
+
+            let clipboard_paragraph = 
+                Paragraph::new(
+                    self.list.get_list_item(
+                        &clipboard.list_item_id
+                    )
+                    .unwrap()
+                    .value
+                    .clone()
+                )
+                .block(clipboard_block);
+
+            frame.render_widget(clipboard_paragraph, top_bar_layout[1]);
+
+        } else {
+            title_layout = layout[0];
+        }
+
+        frame.render_widget(title_paragraph, title_layout);
 
         let block = Block::new()
             .title("")
