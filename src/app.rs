@@ -187,7 +187,7 @@ impl App {
 
         let mut current_file = match self.file_path.clone() {
             Some(path) => path.to_str().unwrap().to_string(),
-            None => "[Sample]".to_string(),
+            None => "Sample".to_string(),
         };
 
         current_file.insert(0, '[');
