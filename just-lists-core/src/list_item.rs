@@ -14,7 +14,7 @@ pub struct ListItem {
 pub enum State {
     Pending,
     Completed,
-    Blocked
+    Blocked,
 }
 
 impl State {

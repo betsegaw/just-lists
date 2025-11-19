@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::Ok};
-use just_lists_core::list_item::State;
 use core::panic;
 use crossterm::event::{self, Event, KeyCode};
+use just_lists_core::list_item::State;
 use just_lists_core::{get_sample_list, list::List};
 use ratatui::widgets::{ListState, Scrollbar, ScrollbarState};
 use ratatui::{prelude::*, widgets::BorderType};
@@ -165,17 +165,11 @@ impl App {
     const BASE_UI_BORDER_TYPE: BorderType = BorderType::Thick;
     const BASE_UI_COLOR: Color = Color::Rgb(158, 170, 248);
 
-    const SELECTED_INCOMPLETE_STYLE: Style = Style::new()
-        .bg(Self::BASE_UI_COLOR)
-        .fg(Color::Black);
+    const SELECTED_INCOMPLETE_STYLE: Style = Style::new().bg(Self::BASE_UI_COLOR).fg(Color::Black);
 
-    const SELECTED_COMPLETE_STYLE: Style = Style::new()
-        .bg(Color::Green)
-        .fg(Color::Black);
+    const SELECTED_COMPLETE_STYLE: Style = Style::new().bg(Color::Green).fg(Color::Black);
 
-    const SELECTED_BLOCKED_STYLE: Style = Style::new()
-        .bg(Color::Red)
-        .fg(Color::Black);
+    const SELECTED_BLOCKED_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 
     fn view(&self, frame: &mut Frame) {
         let layout = Layout::default()
@@ -220,18 +214,25 @@ impl App {
         };
 
         title_paragraph = title_paragraph.block(title_block);
-        
+
         let title_layout: Rect;
 
         if let Some(clipboard) = &self.clipboard {
             let top_bar_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Percentage(100), Constraint::Percentage(100)])
-            .split(layout[0]);
+                .direction(Direction::Horizontal)
+                .constraints(vec![
+                    Constraint::Percentage(100),
+                    Constraint::Percentage(100),
+                ])
+                .split(layout[0]);
 
             title_layout = top_bar_layout[0];
 
-            let clip_type_title = if clipboard.action_type == ClipboardAction::Copy { "(Copy)" } else { "(Cut)" };
+            let clip_type_title = if clipboard.action_type == ClipboardAction::Copy {
+                "(Copy)"
+            } else {
+                "(Cut)"
+            };
 
             let clipboard_block = Block::new()
                 .border_type(Self::BASE_UI_BORDER_TYPE)
@@ -242,19 +243,16 @@ impl App {
                 .title_style(Style::default().add_modifier(Modifier::BOLD))
                 .borders(Borders::ALL);
 
-            let clipboard_paragraph = 
-                Paragraph::new(
-                    self.list.get_list_item(
-                        &clipboard.list_item_id
-                    )
+            let clipboard_paragraph = Paragraph::new(
+                self.list
+                    .get_list_item(&clipboard.list_item_id)
                     .unwrap()
                     .value
-                    .clone()
-                )
-                .block(clipboard_block);
+                    .clone(),
+            )
+            .block(clipboard_block);
 
             frame.render_widget(clipboard_paragraph, top_bar_layout[1]);
-
         } else {
             title_layout = layout[0];
         }
@@ -353,10 +351,10 @@ impl App {
                     match list_item.state {
                         State::Completed => {
                             item = item.style(Self::SELECTED_COMPLETE_STYLE);
-                        }, 
+                        }
                         State::Pending => {
                             item = item.style(Self::SELECTED_INCOMPLETE_STYLE);
-                        },
+                        }
                         State::Blocked => {
                             item = item.style(Self::SELECTED_BLOCKED_STYLE);
                         }
@@ -776,13 +774,9 @@ impl App {
         match list_item.state {
             State::Pending => {
                 list_item.state = State::Completed;
-            },
-            State::Completed => {
-                list_item.state = State::Blocked
-            },
-            State::Blocked => {
-                list_item.state = State::Pending
             }
+            State::Completed => list_item.state = State::Blocked,
+            State::Blocked => list_item.state = State::Pending,
         };
 
         self.save_list();
