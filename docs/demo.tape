@@ -1,4 +1,5 @@
 Set Shell zsh
+Set Theme "Catppuccin Frappe"
 
 Output demo.gif
 Output golden.ascii
