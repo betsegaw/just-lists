@@ -6,7 +6,7 @@
 
 Just Lists is a terminal-based task manager that helps you organize, manage, and track your tasks with an intuitive interface right in your command line.
 
-<img alt="Animated walkethrough of Just-Lists features" src="https://github.com/betsegaw/just-lists/blob/0e53a75bda0de24c104a2e3589f0c35f8d9e7a23/docs/demo.gif" />
+![Animated walkethrough of Just-Lists features](https://github.com/Your_Repository_Name/docs/demo.gif)
 
 ## What You Can Do
 
