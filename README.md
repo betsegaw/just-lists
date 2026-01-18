@@ -2,9 +2,9 @@
 
 # Just Lists - Simple Terminal Task Manager
 
-**A powerful yet simple way to organize your tasks in the terminal**
+**A simple way to organize your tasks in the terminal**
 
-Just Lists is a terminal-based task manager that helps you organize, manage, and track your tasks with an intuitive interface right in your command line.
+Just Lists is a terminal-based task manager that helps you organize, manage, and track your tasks with an intuitive interface in your command line.
 
 <img alt="Animated walkethrough of Just-Lists features" src="https://github.com/betsegaw/just-lists/blob/0e53a75bda0de24c104a2e3589f0c35f8d9e7a23/docs/demo.gif?raw=true" />
 
@@ -67,7 +67,7 @@ To save your lists, always provide a file path as an argument or use the "New" f
 4. Navigate between levels using arrow keys
 
 ### Breadcrumb Navigation Feature (Special)
-The **`j` key** provides special **"focus view"** functionality:
+The **`j` key** provides **"focus view"** functionality:
 - Press `j` to "focus" on the current item
 - This shows only the children of that item in the main list view
 - You can see the full path to your current location in the title bar
